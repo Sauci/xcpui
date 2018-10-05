@@ -1,0 +1,94 @@
+//
+// Created by sauci on 23/11/2018.
+//
+
+#ifndef XCPUI_SHARED_H
+#define XCPUI_SHARED_H
+
+#include "interface_interface_types.h"
+#include "xcp_interface_types.h"
+
+#define STR(val) #val
+
+#define GET_INTERFACE_TYPE 0
+#define GET_INTERFACE_NAME 1
+#define GET_HARDWARE_CHANNEL_COUNT 2
+#define IS_PLUGGED_IN 3
+#define GET_MASTER_IDENTIFIER 4
+#define GET_SLAVE_IDENTIFIER 5
+#define GET_BROADCAST_IDENTIFIER 6
+#define GET_BAUD_RATE 7
+#define GET_HARDWARE_CHANNEL 8
+#define GET_TIMING_PARAMETER 9
+#define GET_CTO 10
+#define SET_MASTER_IDENTIFIER 11
+#define SET_SLAVE_IDENTIFIER 12
+#define SET_BROADCAST_IDENTIFIER 13
+#define SET_BAUD_RATE 14
+#define SET_HARDWARE_CHANNEL 15
+#define SET_TIMING_PARAMETER 16
+#define INITIALIZE_HARDWARE 17
+#define DE_INITIALIZE_HARDWARE 18
+
+#define CONNECT 0xFF
+#define DISCONNECT 0xFE
+#define GET_STATUS 0xFD
+#define SYNCH 0xFC
+#define GET_COMM_MODE_INFO 0xFB
+#define GET_ID 0xFA
+#define SET_REQUEST 0xF9
+#define GET_SEED 0xF8
+#define UNLOCK 0xF7
+#define SET_MTA 0xF6
+#define UPLOAD 0xF5
+#define SHORT_UPLOAD 0xF4
+#define BUILD_CHECKSUM 0xF3
+#define TRANSPORT_LAYER_CMD 0xF2
+#define USER_CMD 0xF1
+#define DOWNLOAD 0xF0
+#define DOWNLOAD_NEXT 0xEF
+#define DOWNLOAD_MAX 0xEE
+#define SHORT_DOWNLOAD 0xED
+#define MODIFY_BITS 0xEC
+#define SET_CAL_PAGE 0xEB
+#define GET_CAL_PAGE 0xEA
+#define GET_PAG_PROCESSOR_INFO 0xE9
+#define GET_SEGMENT_INFO 0xE8
+#define GET_PAGE_INFO 0xE7
+#define SET_SEGMENT_MODE 0xE6
+#define GET_SEGMENT_MODE 0xE5
+#define COPY_CAL_PAGE 0xE4
+#define CLEAR_DAQ_LIST 0xE3
+#define SET_DAQ_PTR 0xE2
+#define WRITE_DAQ 0xE1
+#define SET_DAQ_LIST_MODE 0xE0
+#define GET_DAQ_LIST_MODE 0xDF
+#define START_STOP_DAQ_LIST 0xDE
+#define START_STOP_SYNCH 0xDD
+#define GET_DAQ_CLOCK 0xDC
+#define READ_DAQ 0xDB
+#define GET_DAQ_PROCESSOR_INFO 0xDA
+#define GET_DAQ_RESOLUTION_INFO 0xD9
+#define GET_DAQ_LIST_INFO 0xD8
+#define GET_DAQ_EVENT_INFO 0xD7
+#define FREE_DAQ 0xD6
+#define ALLOC_DAQ 0xD5
+#define ALLOC_ODT 0xD4
+#define ALLOC_ODT_ENTRY 0xD3
+#define PROGRAM_START 0xD2
+#define PROGRAM_CLEAR 0xD1
+#define PROGRAM 0xD0
+#define PROGRAM_RESET 0xCF
+#define GET_PGM_PROCESSOR_INFO 0xCE
+#define GET_SECTOR_INFO 0xCD
+#define PROGRAM_PREPARE 0xCC
+#define PROGRAM_FORMAT 0xCB
+#define PROGRAM_NEXT 0xCA
+#define PROGRAM_MAX 0xC9
+#define PROGRAM_VERIFY 0xC8
+
+MSGPACK_ADD_ENUM(interface_types::interface_type);
+MSGPACK_ADD_ENUM(xcp_interface_type::timing_parameter_id_type);
+MSGPACK_ADD_ENUM(xcp_types::connect::MODE);
+
+#endif //XCPUI_SHARED_H

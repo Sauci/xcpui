@@ -1,0 +1,40 @@
+version: "{build}"
+
+os:
+  - Visual Studio 2017
+#  - Visual Studio 2015
+
+init:
+  - git config --global core.autocrlf input
+  - ps: Update-AppveyorBuild -Version "$($env:APPVEYOR_REPO_BRANCH) - $($env:APPVEYOR_REPO_COMMIT)"
+
+install:
+  - git submodule update --init --recursive
+
+platform:
+  - Win32
+  - x64
+
+configuration:
+  - Debug
+  - Release
+
+before_build:
+  - cmake -H. -Bbuild -A%PLATFORM% -Dgtest_force_shared_crt=ON
+
+build:
+  project: build\$(APPVEYOR_PROJECT_NAME).sln
+  parallel: true
+  verbosity: minimal
+
+test_script:
+  - cd build
+  - ctest -V -j 1 -C %CONFIGURATION% --timeout 20
+
+on_finish:
+  - ps: |
+      Set-Location $($env:APPVEYOR_BUILD_FOLDER)
+      Get-ChildItem ".\test" -Filter *.xml |
+      Foreach-Object {
+          (new-object net.webclient).UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path $_.FullName))
+      }

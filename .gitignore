@@ -1,0 +1,8 @@
+*.chm
+*.lib
+.idea
+.vs
+build
+cmake-build-*
+test
+api/peak/lib

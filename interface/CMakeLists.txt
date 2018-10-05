@@ -1,0 +1,4 @@
+add_library(interface_interface INTERFACE)
+target_include_directories(interface_interface INTERFACE include)
+
+add_subdirectory(xcp)
