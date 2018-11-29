@@ -3,6 +3,7 @@ BasedOnStyle: LLVM
 AccessModifierOffset: '0'
 AlignEscapedNewlinesLeft: 'false'
 AlignTrailingComments: 'true'
+AlignOperands: 'true'
 AllowAllParametersOfDeclarationOnNextLine: 'false'
 AllowShortBlocksOnASingleLine: 'false'
 AllowShortFunctionsOnASingleLine: None

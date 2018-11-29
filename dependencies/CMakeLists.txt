@@ -1,2 +1,5 @@
-add_subdirectory(gtest)
+if (${enable_test})
+    add_subdirectory(gtest)
+endif ()
+
 add_subdirectory(rpclib)

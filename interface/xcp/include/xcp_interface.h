@@ -18,8 +18,9 @@
 
 #include "interface_interface.h"
 #include "xcp_interface_types.h"
+#include "xcp_interface_exception.h"
 
-using namespace xcp_interface_type;
+using namespace xcp_interface_types;
 
 /**
  * @brief interface API defining a common behavior for all XCP devices.
@@ -88,10 +89,16 @@ struct XCPInterface : public InterfaceInterface
      * @param timing_parameter_id the identifier of the timing parameter (T1 .. T7)
      * @returns timing parameter value [ms]
      */
-    virtual const timing_parameter_type
-    get_timing_parameter(timing_parameter_id_type timing_parameter_id) = 0;
+    virtual const timing_type get_timing_parameter(timing_id_type timing_parameter_id) = 0;
 
-    virtual void dequeue_cto(bool &is_valid, status_type &status, buffer_type &buffer) = 0;
+    /**
+     * @brief dequeues a single DTO (data transfer object) from the internal DTO queue.
+     * @warning the user is responsible of de-allocating the returned object.
+     * @returns an object responding to XCPDTOInterface interface
+     *     @retval nullptr no DTO available in tue queue
+     *     @retval XCPDTOInterface * pointer to the older allocated object
+     */
+    virtual XCPDTOInterface *dequeue_dto() = 0;
 
     /**
      * @brief sets the master CAN identifier.
@@ -130,11 +137,10 @@ struct XCPInterface : public InterfaceInterface
 
     /**
      * @brief sets the communication timeout parameter.
-     * @param timing_parameter_id identifier if the timing parameter [T1 .. T7]
-     * @param timing_parameter communication timeout parameter
+     * @param timing_id_type identifier if the timing parameter [T1 .. T7]
+     * @param timing_type communication timeout parameter
      */
-    virtual void set_timing_parameter(timing_parameter_id_type timing_parameter_id,
-                                      timing_parameter_type timing_parameter) = 0;
+    virtual void set_timing_parameter(timing_id_type timing_id, timing_type timing) = 0;
 
     /**
      * @brief initializes the hardware.
@@ -156,470 +162,624 @@ struct XCPInterface : public InterfaceInterface
      */
     virtual void de_initialize_hardware(bool wait_for_completion) = 0;
 
-    /**
-     * @brief this command establishes a continuous, logical, point-to-point connection with a slave
-     * device.
-     * during a running XCP session (CONNECTED) this command has no influence on any configuration
-     * of the XCP slave driver.
-     * a slave device does not respond to any other commands (except auto detection) unless it is in
-     * the state CONNECTED.
-     * with a CONNECT(Mode = Normal), the master can start an XCP communication with the slave.
-     * with a CONNECT(Mode = user defined), the master can start an XCP communication with
-     * the slave and at the same time tell the slave that it should go into a special (user defined)
-     * mode.
-     */
-    virtual void connect(xcp_types::connect::MODE mode) = 0;
+    virtual bool cto_completion_handler(XCPCTORequestInterface *message) = 0;
+
+#ifndef XCP_DISABLE_PROGRAM_VERIFY_COMMAND
 
     /**
-     * @brief this command brings the slave to the DISCONNECTED state.
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'PROGRAM_VERIFY', identified with command code 0xC8.'
      */
-    virtual void disconnect() = 0;
+    virtual void program_verify(XCPCTOProgramVerify &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_PROGRAM_VERIFY_COMMAND */
+
+#ifndef XCP_DISABLE_PROGRAM_MAX_COMMAND
 
     /**
-     * @brief this command returns all current status information of the slave device. this includes
-     * the status of the resource protection, pending store requests and the general status of data
-     * acquisition and stimulation.
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'PROGRAM_MAX', identified with command code 0xC9.'
      */
-    virtual void get_status() = 0;
+    virtual void program_max(XCPCTOProgramMax &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_PROGRAM_MAX_COMMAND */
+
+#ifndef XCP_DISABLE_PROGRAM_NEXT_COMMAND
 
     /**
-     * @brief this command is used to synchronize command execution after timeout conditions. the
-     * SYNCH command will always have a negative response with the error code ERR_CMD_SYNCH. there
-     * is no other command using this error code, therefore the response to a SYNCH command may be
-     * distinguished from the response to any other command.
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'PROGRAM_NEXT', identified with command code 0xCA.'
      */
-    virtual void synch() = 0;
+    virtual void program_next(XCPCTOProgramNext &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_PROGRAM_NEXT_COMMAND */
+
+#ifndef XCP_DISABLE_PROGRAM_FORMAT_COMMAND
 
     /**
-     * @brief this command returns optional information on different communication modes supported
-     * by the slave.
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'PROGRAM_FORMAT', identified with command code 0xCB.'
      */
-    virtual void get_comm_mode_info() = 0;
+    virtual void program_format(XCPCTOProgramFormat &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_PROGRAM_FORMAT_COMMAND */
+
+#ifndef XCP_DISABLE_PROGRAM_PREPARE_COMMAND
 
     /**
-     * @brief this command is used for automatic session configuration and for slave device
-     * identification.
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'PROGRAM_PREPARE', identified with command code 0xCC.'
      */
-    virtual void get_id(xcp_types::get_id::TYPE request_identification) = 0;
+    virtual void program_prepare(XCPCTOProgramPrepare &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_PROGRAM_PREPARE_COMMAND */
+
+#ifndef XCP_DISABLE_GET_SECTOR_INFO_COMMAND
 
     /**
-     * @brief this command is used to request to save to non-volatile memory.
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'GET_SECTOR_INFO', identified with command code 0xCD.'
      */
-    virtual void set_request(xcp_types::set_request::MODE mode,
-                             xcp_types::set_request::SESSION_CONFIGURATION_ID session_configuration_id) = 0;
+    virtual void get_sector_info(XCPCTOGetSectorInfo &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_GET_SECTOR_INFO_COMMAND */
+
+#ifndef XCP_DISABLE_GET_PGM_PROCESSOR_INFO_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'GET_PGM_PROCESSOR_INFO', identified with command code 0xCE.'
      */
-    virtual void get_seed(peak::HandleType xcp_handle, BYTE mode, BYTE resource) = 0;
+    virtual void get_pgm_processor_info(XCPCTOGetPgmProcessorInfo &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_GET_PGM_PROCESSOR_INFO_COMMAND */
+
+#ifndef XCP_DISABLE_PROGRAM_RESET_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'PROGRAM_RESET', identified with command code 0xCF.'
      */
-    virtual void unlock(peak::HandleType xcp_handle, BYTE key_length, BYTE *key) = 0;
+    virtual void program_reset(XCPCTOProgramReset &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_PROGRAM_RESET_COMMAND */
+
+#ifndef XCP_DISABLE_PROGRAM_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'PROGRAM', identified with command code 0xD0.'
      */
-    virtual void set_mta(BYTE address_extension, DWORD address) = 0;
+    virtual void program(XCPCTOProgram &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_PROGRAM_COMMAND */
+
+#ifndef XCP_DISABLE_PROGRAM_CLEAR_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'PROGRAM_CLEAR', identified with command code 0xD1.'
      */
-    virtual void upload(BYTE number_of_elements) = 0;
+    virtual void program_clear(XCPCTOProgramClear &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_PROGRAM_CLEAR_COMMAND */
+
+#ifndef XCP_DISABLE_PROGRAM_START_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'PROGRAM_START', identified with command code 0xD2.'
      */
-    virtual void short_upload(BYTE number_of_elements, BYTE address_extension, DWORD address) = 0;
+    virtual void program_start(XCPCTOProgramStart &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_PROGRAM_START_COMMAND */
+
+#ifndef XCP_DISABLE_ALLOC_ODT_ENTRY_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'ALLOC_ODT_ENTRY', identified with command code 0xD3.'
      */
-    virtual void build_checksum(DWORD block_size) = 0;
+    virtual void alloc_odt_entry(XCPCTOAllocEntry &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_ALLOC_ODT_ENTRY_COMMAND */
+
+#ifndef XCP_DISABLE_ALLOC_ODT_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'ALLOC_ODT', identified with command code 0xD4.'
      */
-    virtual void transport_layer_cmd(BYTE sub_command,
-                                     BYTE *parameter_buffer,
-                                     WORD parameter_buffer_length) = 0;
+    virtual void alloc_odt(XCPCTOAlloc &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_ALLOC_ODT_COMMAND */
+
+#ifndef XCP_DISABLE_ALLOC_DAQ_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'ALLOC_DAQ', identified with command code 0xD5.'
      */
-    virtual void user_cmd(BYTE sub_command,
-                          BYTE *parameter_buffer,
-                          WORD parameter_buffer_length) = 0;
+    virtual void alloc_daq(XCPCTOAlloc &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_ALLOC_DAQ_COMMAND */
+
+#ifndef XCP_DISABLE_FREE_DAQ_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'FREE_DAQ', identified with command code 0xD6.'
      */
-    virtual void download(peak::HandleType xcp_handle,
-                          BYTE number_of_elements,
-                          BYTE *data_buffer,
-                          BYTE data_buffer_length) = 0;
+    virtual void free_daq(XCPCTOFree &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_FREE_DAQ_COMMAND */
+
+#ifndef XCP_DISABLE_GET_DAQ_EVENT_INFO_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'GET_DAQ_EVENT_INFO', identified with command code 0xD7.'
      */
-    virtual void download_next(BYTE number_of_elements,
-                               BYTE *data_buffer,
-                               BYTE data_buffer_length) = 0;
+    virtual void get_daq_event_info(XCPCTOGetEventInfo &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_GET_DAQ_EVENT_INFO_COMMAND */
+
+#ifndef XCP_DISABLE_GET_DAQ_LIST_INFO_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'GET_DAQ_LIST_INFO', identified with command code 0xD8.'
      */
-    virtual void download_max(BYTE *data_buffer) = 0;
+    virtual void get_daq_list_info(XCPCTOGetListInfo &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_GET_DAQ_LIST_INFO_COMMAND */
+
+#ifndef XCP_DISABLE_GET_DAQ_RESOLUTION_INFO_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'GET_DAQ_RESOLUTION_INFO', identified with command code 0xD9.'
      */
-    virtual void modify_bits(BYTE shift_value, WORD and_mask, WORD xor_mask) = 0;
+    virtual void get_daq_resolution_info(XCPCTOGetResolutionInfo &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_GET_DAQ_RESOLUTION_INFO_COMMAND */
+
+#ifndef XCP_DISABLE_GET_DAQ_PROCESSOR_INFO_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'GET_DAQ_PROCESSOR_INFO', identified with command code 0xDA.'
      */
-    virtual void set_calibration_page(BYTE mode, peak::CalibrationPageType page) = 0;
+    virtual void get_daq_processor_info(XCPCTOGetProcessorInfo &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_GET_DAQ_PROCESSOR_INFO_COMMAND */
+
+#ifndef XCP_DISABLE_READ_DAQ_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'READ_DAQ', identified with command code 0xDB.'
      */
-    virtual void get_calibration_page(BYTE mode, BYTE data_segment_number) = 0;
+    virtual void read_daq(XCPCTORead &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_READ_DAQ_COMMAND */
+
+#ifndef XCP_DISABLE_GET_DAQ_CLOCK_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'GET_DAQ_CLOCK', identified with command code 0xDC.'
      */
-    virtual void get_paging_processor_information(peak::HandleType xcp_handle) = 0;
+    virtual void get_daq_clock(XCPCTOGetClock &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_GET_DAQ_CLOCK_COMMAND */
+
+#ifndef XCP_DISABLE_START_STOP_SYNCH_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'START_STOP_SYNCH', identified with command code 0xDD.'
      */
-    virtual void get_segment_information(BYTE mode,
-                                         BYTE segment_number,
-                                         BYTE segment_info,
-                                         BYTE mapping_index) = 0;
+    virtual void start_stop_synch(XCPCTOStartStopSynch &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_START_STOP_SYNCH_COMMAND */
+
+#ifndef XCP_DISABLE_START_STOP_DAQ_LIST_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'START_STOP_DAQ_LIST', identified with command code 0xDE.'
      */
-    virtual void get_page_information(peak::CalibrationPageType page) = 0;
+    virtual void start_stop_daq_list(XCPCTOStartStopList &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_START_STOP_DAQ_LIST_COMMAND */
+
+#ifndef XCP_DISABLE_GET_DAQ_LIST_MODE_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'GET_DAQ_LIST_MODE', identified with command code 0xDF.'
      */
-    virtual void set_segment_mode(BYTE mode, BYTE segment_number) = 0;
+    virtual void get_daq_list_mode(XCPCTOGetListMode &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_GET_DAQ_LIST_MODE_COMMAND */
+
+#ifndef XCP_DISABLE_SET_DAQ_LIST_MODE_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'SET_DAQ_LIST_MODE', identified with command code 0xE0.'
      */
-    virtual void get_segment_mode(BYTE segment_number) = 0;
+    virtual void set_daq_list_mode(XCPCTOSetListMode &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_SET_DAQ_LIST_MODE_COMMAND */
+
+#ifndef XCP_DISABLE_WRITE_DAQ_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'WRITE_DAQ', identified with command code 0xE1.'
      */
-    virtual void copy_calibration_page(peak::CalibrationPageType source,
-                                       peak::CalibrationPageType destination) = 0;
+    virtual void write_daq(XCPCTOWrite &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_WRITE_DAQ_COMMAND */
+
+#ifndef XCP_DISABLE_SET_DAQ_PTR_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'SET_DAQ_PTR', identified with command code 0xE2.'
      */
-    virtual void set_daq_list_pointer(WORD daq_list_number, BYTE odt_number, BYTE odt_entry) = 0;
+    virtual void set_daq_ptr(XCPCTOSetPtr &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_SET_DAQ_PTR_COMMAND */
+
+#ifndef XCP_DISABLE_CLEAR_DAQ_LIST_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'CLEAR_DAQ_LIST', identified with command code 0xE3.'
      */
-    virtual void write_daq_list_entry(peak::ODTEntryType entry) = 0;
+    virtual void clear_daq_list(XCPCTOClearList &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_CLEAR_DAQ_LIST_COMMAND */
+
+#ifndef XCP_DISABLE_COPY_CAL_PAGE_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'COPY_CAL_PAGE', identified with command code 0xE4.'
      */
-    virtual void write_daq_list_entries(BYTE number_of_elements, peak::ODTEntryType *elements) = 0;
+    virtual void copy_cal_page(XCPCTOCopyCalPage &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_COPY_CAL_PAGE_COMMAND */
+
+#ifndef XCP_DISABLE_GET_SEGMENT_MODE_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'GET_SEGMENT_MODE', identified with command code 0xE5.'
      */
-    virtual void set_daq_list_mode(BYTE mode, peak::DAQListConfigType configuration) = 0;
+    virtual void get_segment_mode(XCPCTOGetSegmentMode &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_GET_SEGMENT_MODE_COMMAND */
+
+#ifndef XCP_DISABLE_SET_SEGMENT_MODE_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'SET_SEGMENT_MODE', identified with command code 0xE6.'
      */
-    virtual void start_stop_daq_list(BYTE mode, WORD daq_list_number) = 0;
+    virtual void set_segment_mode(XCPCTOSetSegmentMode &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_SET_SEGMENT_MODE_COMMAND */
+
+#ifndef XCP_DISABLE_GET_PAGE_INFO_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'GET_PAGE_INFO', identified with command code 0xE7.'
      */
-    virtual void start_stop_synchronized_daq_list(BYTE mode) = 0;
+    virtual void get_page_info(XCPCTOGetPageInfo &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_GET_PAGE_INFO_COMMAND */
+
+#ifndef XCP_DISABLE_GET_SEGMENT_INFO_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'GET_SEGMENT_INFO', identified with command code 0xE8.'
      */
-    virtual void read_daq_list_entry(peak::HandleType xcp_handle) = 0;
+    virtual void get_segment_info(XCPCTOGetSegmentInfo &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_GET_SEGMENT_INFO_COMMAND */
+
+#ifndef XCP_DISABLE_GET_PAG_PROCESSOR_INFO_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'GET_PAG_PROCESSOR_INFO', identified with command code 0xE9.'
      */
-    virtual void get_daq_clock(peak::HandleType xcp_handle) = 0;
+    virtual void get_pag_processor_info(XCPCTOGetPagProcessorInfo &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_GET_PAG_PROCESSOR_INFO_COMMAND */
+
+#ifndef XCP_DISABLE_GET_CAL_PAGE_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'GET_CAL_PAGE', identified with command code 0xEA.'
      */
-    virtual void get_daq_processor_information(peak::HandleType xcp_handle) = 0;
+    virtual void get_cal_page(XCPCTOGetCalPage &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_GET_CAL_PAGE_COMMAND */
+
+#ifndef XCP_DISABLE_SET_CAL_PAGE_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'SET_CAL_PAGE', identified with command code 0xEB.'
      */
-    virtual void get_daq_resolution_information(peak::HandleType xcp_handle) = 0;
+    virtual void set_cal_page(XCPCTOSetCalPage &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_SET_CAL_PAGE_COMMAND */
+
+#ifndef XCP_DISABLE_MODIFY_BITS_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'MODIFY_BITS', identified with command code 0xEC.'
      */
-    virtual void get_daq_list_mode(WORD daq_list_number) = 0;
+    virtual void modify_bits(XCPCTOModifyBits &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_MODIFY_BITS_COMMAND */
+
+#ifndef XCP_DISABLE_SHORT_DOWNLOAD_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'SHORT_DOWNLOAD', identified with command code 0xED.'
      */
-    virtual void get_event_channel_information(WORD event_channel_number) = 0;
+    virtual void short_download(XCPCTOShortDownload &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_SHORT_DOWNLOAD_COMMAND */
+
+#ifndef XCP_DISABLE_DOWNLOAD_MAX_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'DOWNLOAD_MAX', identified with command code 0xEE.'
      */
-    virtual void clear_daq_list(WORD daq_list_number) = 0;
+    virtual void download_max(XCPCTODownloadMax &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_DOWNLOAD_MAX_COMMAND */
+
+#ifndef XCP_DISABLE_DOWNLOAD_NEXT_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'DOWNLOAD_NEXT', identified with command code 0xEF.'
      */
-    virtual void get_daq_list_information(WORD daq_list_number) = 0;
+    virtual void download_next(XCPCTODownloadNext &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_DOWNLOAD_NEXT_COMMAND */
+
+#ifndef XCP_DISABLE_DOWNLOAD_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'DOWNLOAD', identified with command code 0xF0.'
      */
-    virtual void free_daq_lists(peak::HandleType xcp_handle) = 0;
+    virtual void download(XCPCTODownload &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_DOWNLOAD_COMMAND */
+
+#ifndef XCP_DISABLE_USER_CMD_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'USER_CMD', identified with command code 0xF1.'
      */
-    virtual void allocate_daq_lists(WORD daq_count) = 0;
+    virtual void user_cmd(XCPCTOUserCmd &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_USER_CMD_COMMAND */
+
+#ifndef XCP_DISABLE_TRANSPORT_LAYER_CMD_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'TRANSPORT_LAYER_CMD', identified with command code 0xF2.'
      */
-    virtual void allocate_odt(WORD daq_list_number, BYTE odt_count) = 0;
+    virtual void transport_layer_cmd(XCPCTOTransportLayerCmd &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_TRANSPORT_LAYER_CMD_COMMAND */
+
+#ifndef XCP_DISABLE_BUILD_CHECKSUM_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'BUILD_CHECKSUM', identified with command code 0xF3.'
      */
-    virtual void allocate_odt_entry(WORD daq_list_number, BYTE odt_number, BYTE entries_count) = 0;
+    virtual void build_checksum(XCPCTOBuildChecksum &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_BUILD_CHECKSUM_COMMAND */
+
+#ifndef XCP_DISABLE_SHORT_UPLOAD_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'SHORT_UPLOAD', identified with command code 0xF4.'
      */
-    virtual void program_start(peak::HandleType xcp_handle) = 0;
+    virtual void short_upload(XCPCTOShortUpload &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_SHORT_UPLOAD_COMMAND */
+
+#ifndef XCP_DISABLE_UPLOAD_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'UPLOAD', identified with command code 0xF5.'
      */
-    virtual void program_clear(BYTE mode, DWORD clear_range) = 0;
+    virtual void upload(XCPCTOUpload &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_UPLOAD_COMMAND */
+
+#ifndef XCP_DISABLE_SET_MTA_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'SET_MTA', identified with command code 0xF6.'
      */
-    virtual void program(BYTE number_of_elements, BYTE *data_buffer, BYTE data_buffer_length) = 0;
+    virtual void set_mta(XCPCTOSetMta &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_SET_MTA_COMMAND */
+
+#ifndef XCP_DISABLE_UNLOCK_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'UNLOCK', identified with command code 0xF7.'
      */
-    virtual void program_reset(peak::HandleType xcp_handle) = 0;
+    virtual void unlock(XCPCTOUnlock &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_UNLOCK_COMMAND */
+
+#ifndef XCP_DISABLE_GET_SEED_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'GET_SEED', identified with command code 0xF8.'
      */
-    virtual void get_program_processor_information(peak::HandleType xcp_handle) = 0;
+    virtual void get_seed(XCPCTOGetSeed &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_GET_SEED_COMMAND */
+
+#ifndef XCP_DISABLE_SET_REQUEST_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'SET_REQUEST', identified with command code 0xF9.'
      */
-    virtual void get_sector_information(BYTE mode, BYTE sector_number) = 0;
+    virtual void set_request(XCPCTOSetRequest &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_SET_REQUEST_COMMAND */
+
+#ifndef XCP_DISABLE_GET_ID_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'GET_ID', identified with command code 0xFA.'
      */
-    virtual void program_prepare(WORD code_size) = 0;
+    virtual void get_id(XCPCTOGetId &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_GET_ID_COMMAND */
+
+#ifndef XCP_DISABLE_GET_COMM_MODE_INFO_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'GET_COMM_MODE_INFO', identified with command code 0xFB.'
      */
-    virtual void program_format(peak::ProgramFormatType format) = 0;
+    virtual void get_comm_mode_info(XCPCTOGetCommModeInfo &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_GET_COMM_MODE_INFO_COMMAND */
+
+#ifndef XCP_DISABLE_SYNCH_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'SYNCH', identified with command code 0xFC.'
      */
-    virtual void program_next(BYTE number_of_elements, BYTE *data_buffer, BYTE data_length) = 0;
+    virtual void synch(XCPCTOSynch &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_SYNCH_COMMAND */
+
+#ifndef XCP_DISABLE_GET_STATUS_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'GET_STATUS', identified with command code 0xFD.'
      */
-    virtual void program_max(BYTE *element_buffer) = 0;
+    virtual void get_status(XCPCTOGetStatus &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_GET_STATUS_COMMAND */
+
+#ifndef XCP_DISABLE_DISCONNECT_COMMAND
 
     /**
-     * @brief
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'DISCONNECT', identified with command code 0xFE.'
      */
-    virtual void program_verify(BYTE mode, WORD type, DWORD value) = 0;
+    virtual void disconnect(XCPCTODisconnect &cto) = 0;
+
+#endif /* #ifndef XCP_DISABLE_DISCONNECT_COMMAND */
+
+#ifndef XCP_DISABLE_CONNECT_COMMAND
 
     /**
-     * @brief callback called each time the interface received a message.
-     * @param type the type of the message (CTO/DTO)
-     * @param message the message
-     *
-     * @returns boolean value to indicate if the message object should be deleted or not.
-     *     @retval true: the message will be deleted
-     *     @retval false: the message will not be deleted
+     * @brief .
+     * @param cto the CTO (command transfer object)
+     * @note corresponds to XCP protocol command 'CONNECT', identified with command code 0xFF.'
      */
-    virtual bool cto_completion_handler(message_type type, XCPMessageInterface *message) = 0;
-};
+    virtual void connect(XCP::CONNECT::MODE mode) = 0;
 
-template<typename T>
-class xcp_interface_exception : public std::exception
-{
-protected:
+#endif /* #ifndef XCP_DISABLE_CONNECT_COMMAND */
 
-    T value_;
-    char buffer_[1024];
-
-    virtual const std::string &get_prefix() const = 0;
-
-    virtual const std::string &get_allowed_range() const = 0;
-
-public:
-
-    explicit xcp_interface_exception(T value) : std::exception(), value_(value), buffer_()
-    {
-    }
-
-    const char *what() const noexcept override
-    {
-        auto string = this->get_prefix() + std::string(" [") + std::to_string(this->value_) +
-                      std::string("]. allowed range: ") + this->get_allowed_range();
-        memset((void *)&buffer_[0], 0, sizeof(buffer_) / sizeof(buffer_[0]));
-        size_t size = string.size() < (sizeof(buffer_) - 1) ? string.size() : sizeof(buffer_) - 1;
-        std::copy(string.begin(), string.begin() + size, (char *)&buffer_[0]);
-        return &buffer_[0];
-    }
-};
-
-class invalid_baud_rate_error :
-    public xcp_interface_exception<baud_rate_type>
-{
-    std::string prefix_ = std::string("invalid baud rate");
-    std::string allowed_range_ = std::string("5000 [baud/s] .. 1000000[baud/s]");
-
-protected:
-
-    const std::string &get_prefix() const override
-    {
-        return prefix_;
-    }
-
-    const std::string &get_allowed_range() const override
-    {
-        return allowed_range_;
-    }
-
-public:
-
-    using xcp_interface_exception::xcp_interface_exception;
-};
-
-class invalid_identifier_error :
-    public xcp_interface_exception<identifier_type>
-{
-    std::string prefix_ = std::string("invalid CAN identifier");
-    std::string allowed_range_ = std::string("0x00 [-] .. 0x1FFFFFFF [-]");
-
-protected:
-
-    const std::string &get_prefix() const override
-    {
-        return prefix_;
-    }
-
-    const std::string &get_allowed_range() const override
-    {
-        return allowed_range_;
-    }
-
-public:
-
-    using xcp_interface_exception::xcp_interface_exception;
-};
-
-class invalid_hardware_channel_error
-    : public xcp_interface_exception<interface_types::hardware_channel_type>
-{
-    std::string prefix_ = std::string("invalid hardware channel");
-    std::string allowed_range_ = std::string("1 [-] .. 2 [-]");
-
-protected:
-
-    const std::string &get_prefix() const override
-    {
-        return prefix_;
-    }
-
-    const std::string &get_allowed_range() const override
-    {
-        return allowed_range_;
-    }
-
-public:
-
-    using xcp_interface_exception::xcp_interface_exception;
-};
-
-struct invalid_timing_parameter_error :
-    public xcp_interface_exception<timing_parameter_id_type>
-{
-    std::string prefix_ = std::string("invalid timing parameter");
-    std::string allowed_range_ = std::string("1 [-] .. 7 [-]");
-
-protected:
-
-    const std::string &get_prefix() const override
-    {
-        return prefix_;
-    }
-
-    const std::string &get_allowed_range() const override
-    {
-        return allowed_range_;
-    }
-
-public:
-
-    using xcp_interface_exception::xcp_interface_exception;
-};
-
-struct invalid_command_error :
-    public xcp_interface_exception<status_type>
-{
-    std::string prefix_ = std::string("invalid XCP command");
-    std::string allowed_range_ = std::string("-");
-
-protected:
-
-    const std::string &get_prefix() const override
-    {
-        return prefix_;
-    }
-
-    const std::string &get_allowed_range() const override
-    {
-        return allowed_range_;
-    }
-
-public:
-
-    using xcp_interface_exception::xcp_interface_exception;
 };
 
 #endif //XCPUI_XCP_INTERFACE_H

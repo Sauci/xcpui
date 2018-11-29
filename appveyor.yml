@@ -21,6 +21,7 @@ configuration:
 
 before_build:
   - cmake -H. -Bbuild -A%PLATFORM% -Dgtest_force_shared_crt=ON
+  #- mkdir graph && cd graph && cmake .. -Denable_test=OFF --graphviz=$(APPVEYOR_PROJECT_NAME).dot && dot -Tpdf -O $(APPVEYOR_PROJECT_NAME).dot && cd ..
 
 build:
   project: build\$(APPVEYOR_PROJECT_NAME).sln

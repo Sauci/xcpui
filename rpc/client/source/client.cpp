@@ -121,373 +121,130 @@ void tcp_write_to_server(Queue<std::tuple<int, BYTE>> *queue)
 
 #include "rpc/client.h"
 #include "shared.h"
-#include "xcp_peak_interface.h"
+#include "xcp_interface.h"
 
-struct XCPClient : public rpc::client, public XCPInterface
+struct XCPClient : public rpc::client
 {
-    explicit XCPClient(std::string const &address, uint16_t port = 5000) :
-        rpc::client(address, port), XCPInterface()
+    explicit XCPClient(std::string const &address, uint16_t port) : rpc::client(address, port)
     {
     }
 
     ~XCPClient() = default;
 
-    const interface_types::interface_type get_interface_type() override
+    const interface_types::interface_type get_interface_type()
     {
         auto tmp_return = rpc::client::call(STR(GET_INTERFACE_TYPE));
         return tmp_return.as<interface_types::interface_type>();
     }
 
-    const interface_types::interface_name_type get_interface_name() override
+    const interface_types::interface_name_type get_interface_name()
     {
         auto tmp_return = rpc::client::call(STR(GET_INTERFACE_NAME));
         return tmp_return.as<interface_types::interface_name_type>();
     }
 
-    const interface_types::hardware_channel_type get_hardware_channel_count() override
+    const interface_types::hardware_channel_type get_hardware_channel_count()
     {
         auto tmp_return = rpc::client::call(STR(GET_HARDWARE_CHANNEL_COUNT));
         return tmp_return.as<interface_types::hardware_channel_type>();
     }
 
-    const bool is_plugged_in() override
+    const bool is_plugged_in()
     {
         auto tmp_return = rpc::client::call(STR(IS_PLUGGED_IN));
         return tmp_return.as<bool>();
     }
 
-    const xcp_interface_type::identifier_type get_master_identifier() override
+    const xcp_interface_types::identifier_type get_master_identifier()
     {
         auto tmp_return = rpc::client::call(STR(GET_MASTER_IDENTIFIER));
-        return tmp_return.as<xcp_interface_type::identifier_type>();
+        return tmp_return.as<xcp_interface_types::identifier_type>();
     }
 
-    const xcp_interface_type::identifier_type get_slave_identifier() override
+    const xcp_interface_types::identifier_type get_slave_identifier()
     {
         auto tmp_return = rpc::client::call(STR(GET_SLAVE_IDENTIFIER));
-        return tmp_return.as<xcp_interface_type::identifier_type>();
+        return tmp_return.as<xcp_interface_types::identifier_type>();
     }
 
-    const xcp_interface_type::identifier_type get_broadcast_identifier() override
+    const xcp_interface_types::identifier_type get_broadcast_identifier()
     {
         auto tmp_return = rpc::client::call(STR(GET_BROADCAST_IDENTIFIER));
-        return tmp_return.as<xcp_interface_type::identifier_type>();
+        return tmp_return.as<xcp_interface_types::identifier_type>();
     }
 
-    const xcp_interface_type::baud_rate_type get_baud_rate() override
+    const xcp_interface_types::baud_rate_type get_baud_rate()
     {
         auto tmp_return = rpc::client::call(STR(GET_BAUD_RATE));
-        return tmp_return.as<xcp_interface_type::baud_rate_type>();
+        return tmp_return.as<xcp_interface_types::baud_rate_type>();
     }
 
-    const xcp_interface_type::hardware_channel_type get_hardware_channel() override
+    const xcp_interface_types::hardware_channel_type get_hardware_channel()
     {
         auto tmp_return = rpc::client::call(STR(GET_HARDWARE_CHANNEL));
-        return tmp_return.as<xcp_interface_type::hardware_channel_type>();
+        return tmp_return.as<xcp_interface_types::hardware_channel_type>();
     }
 
-    const xcp_interface_type::timing_parameter_type
-    get_timing_parameter(xcp_interface_type::timing_parameter_id_type timing_parameter_id) override
+    const xcp_interface_types::timing_type
+    get_timing_parameter(xcp_interface_types::timing_id_type timing_parameter_id)
     {
         auto tmp_return = rpc::client::call(STR(GET_TIMING_PARAMETER), timing_parameter_id);
-        return tmp_return.as<xcp_interface_type::timing_parameter_type>();
+        return tmp_return.as<xcp_interface_types::timing_type>();
     }
 
-    void dequeue_cto(bool &is_valid,
-                     xcp_api_types::status_type &status,
-                     xcp_interface_type::buffer_type &buffer) override
+    XCPDTOPacket dequeue_dto()
     {
-        auto tmp_return = rpc::client::call(STR(GET_CTO), is_valid, status, buffer);
+        auto tmp_return = rpc::client::call(STR(GET_CTO));
+        return tmp_return.as<XCPDTOPacket>();
     }
 
-    void set_master_identifier(xcp_api_types::identifier_type identifier) override
+    void set_master_identifier(xcp_interface_types::identifier_type identifier)
     {
         rpc::client::async_call(STR(SET_MASTER_IDENTIFIER), identifier);
     }
 
-    void set_slave_identifier(xcp_api_types::identifier_type identifier) override
+    void set_slave_identifier(xcp_interface_types::identifier_type identifier)
     {
         rpc::client::async_call(STR(SET_SLAVE_IDENTIFIER), identifier);
     }
 
-    void set_broadcast_identifier(xcp_api_types::identifier_type identifier) override
+    void set_broadcast_identifier(xcp_interface_types::identifier_type identifier)
     {
         rpc::client::async_call(STR(SET_BROADCAST_IDENTIFIER), identifier);
     }
 
-    void set_baud_rate(xcp_api_types::baud_rate_type baud_rate) override
+    void set_baud_rate(xcp_interface_types::baud_rate_type baud_rate)
     {
         rpc::client::async_call(STR(SET_BAUD_RATE), baud_rate);
     }
 
-    void set_hardware_channel(interface_types::hardware_channel_type hardware_channel) override
+    void set_hardware_channel(interface_types::hardware_channel_type hardware_channel)
     {
         rpc::client::async_call(STR(SET_HARDWARE_CHANNEL), hardware_channel);
     }
 
-    void set_timing_parameter(xcp_api_types::timing_parameter_id_type timing_parameter_id,
-                              xcp_api_types::timing_parameter_type timing_parameter) override
+    void set_timing_parameter(xcp_interface_types::timing_id_type timing_id,
+                              xcp_interface_types::timing_type timing)
     {
-        rpc::client::async_call(STR(SET_TIMING_PARAMETER), timing_parameter_id, timing_parameter);
+        rpc::client::async_call(STR(SET_TIMING_PARAMETER), timing_id, timing);
     }
 
-    void initialize_hardware() override
+    void initialize_hardware()
     {
         rpc::client::async_call(STR(INITIALIZE_HARDWARE));
     }
 
-    void de_initialize_hardware(bool wait_for_completion) override
+    void de_initialize_hardware(bool wait_for_completion)
     {
         rpc::client::async_call(STR(DE_INITIALIZE_HARDWARE), wait_for_completion);
     };
 
-    void connect(xcp_types::connect::MODE mode) override
+    void connect(XCP::CONNECT::MODE mode)
     {
-        rpc::client::async_call(STR(CONNECT), mode);
+        rpc::client::async_call(STR(CONNECT_COMMAND_CODE), mode);
     }
 
-    void disconnect() override
-    {
-        rpc::client::async_call(STR(DISCONNECT));
-    }
-
-    void get_status() override
-    {
-        rpc::client::async_call(STR(GET_STATUS));
-    }
-
-    void synch() override
-    {
-        rpc::client::async_call(STR(SYNCH));
-    }
-
-    void get_comm_mode_info() override
-    {
-        rpc::client::async_call(STR(GET_COMM_MODE_INFO));
-    }
-
-    void get_id(xcp_types::get_id::TYPE request_identification) override
-    {
-        rpc::client::async_call(STR(GET_ID));
-    }
-
-    void set_request(xcp_types::set_request::MODE mode,
-                     xcp_types::set_request::SESSION_CONFIGURATION_ID session_configuration_id) override
-    {
-        rpc::client::async_call(STR(SET_REQUEST), mode, session_configuration_id);
-    }
-
-    void get_seed(peak::HandleType xcp_handle, BYTE mode, BYTE resource) override
-    {
-    }
-
-    void unlock(peak::HandleType xcp_handle, BYTE key_length, BYTE *key) override
-    {
-    }
-
-    void transport_layer_cmd(BYTE sub_command,
-                             BYTE *parameter_buffer,
-                             WORD parameter_buffer_length) override
-    {
-    }
-
-    void user_cmd(BYTE sub_command,
-                  BYTE *parameter_buffer,
-                  WORD parameter_buffer_length) override
-    {
-    }
-
-    void set_mta(BYTE address_extension, DWORD address) override
-    {
-    }
-
-    void upload(BYTE number_of_elements) override
-    {
-    }
-
-    void short_upload(BYTE number_of_elements, BYTE address_extension, DWORD address) override
-    {
-    }
-
-    void download(peak::HandleType xcp_handle,
-                  BYTE number_of_elements,
-                  BYTE *data_buffer,
-                  BYTE data_buffer_length) override
-    {
-    }
-
-    void download_next(BYTE number_of_elements,
-                       BYTE *data_buffer,
-                       BYTE data_buffer_length) override
-    {
-    }
-
-    void download_max(BYTE *data_buffer) override
-    {
-    }
-
-    void modify_bits(BYTE shift_value, WORD and_mask, WORD xor_mask) override
-    {
-    }
-
-    void set_calibration_page(BYTE mode, peak::CalibrationPageType page) override
-    {
-    }
-
-    void get_calibration_page(BYTE mode, BYTE data_segment_number) override
-    {
-    }
-
-    void get_paging_processor_information(peak::HandleType xcp_handle) override
-    {
-    }
-
-    void get_segment_information(BYTE mode,
-                                 BYTE segment_number,
-                                 BYTE segment_info,
-                                 BYTE mapping_index) override
-    {
-    }
-
-    void get_page_information(peak::CalibrationPageType page) override
-    {
-    }
-
-    void set_segment_mode(BYTE mode, BYTE segment_number) override
-    {
-    }
-
-    void get_segment_mode(BYTE segment_number) override
-    {
-    }
-
-    void copy_calibration_page(peak::CalibrationPageType source,
-                               peak::CalibrationPageType destination) override
-    {
-    }
-
-    void set_daq_list_pointer(WORD daq_list_number, BYTE odt_number, BYTE odt_entry) override
-    {
-    }
-
-    void write_daq_list_entry(peak::ODTEntryType entry) override
-    {
-    }
-
-    void write_daq_list_entries(BYTE number_of_elements, peak::ODTEntryType *elements) override
-    {
-    }
-
-    void set_daq_list_mode(BYTE mode, peak::DAQListConfigType configuration) override
-    {
-    }
-
-    void start_stop_daq_list(BYTE mode, WORD daq_list_number) override
-    {
-    }
-
-    void start_stop_synchronized_daq_list(BYTE mode) override
-    {
-    }
-
-    void read_daq_list_entry(peak::HandleType xcp_handle) override
-    {
-    }
-
-    void get_daq_clock(peak::HandleType xcp_handle) override
-    {
-    }
-
-    void get_daq_processor_information(peak::HandleType xcp_handle) override
-    {
-    }
-
-    void get_daq_resolution_information(peak::HandleType xcp_handle) override
-    {
-    }
-
-    void get_daq_list_mode(WORD daq_list_number) override
-    {
-    }
-
-    void get_event_channel_information(WORD event_channel_number) override
-    {
-    }
-
-    void clear_daq_list(WORD daq_list_number) override
-    {
-    }
-
-    void get_daq_list_information(WORD daq_list_number) override
-    {
-    }
-
-    void free_daq_lists(peak::HandleType xcp_handle) override
-    {
-    }
-
-    void allocate_daq_lists(WORD daq_count) override
-    {
-    }
-
-    void allocate_odt(WORD daq_list_number, BYTE odt_count) override
-    {
-    }
-
-    void allocate_odt_entry(WORD daq_list_number, BYTE odt_number, BYTE entries_count) override
-    {
-    }
-
-    void program_start(peak::HandleType xcp_handle) override
-    {
-    }
-
-    void program_clear(BYTE mode, DWORD clear_range) override
-    {
-    }
-
-    void program(BYTE number_of_elements, BYTE *data_buffer, BYTE data_buffer_length) override
-    {
-    }
-
-    void program_reset(peak::HandleType xcp_handle) override
-    {
-    }
-
-    void get_program_processor_information(peak::HandleType xcp_handle) override
-    {
-    }
-
-    void get_sector_information(BYTE mode, BYTE sector_number) override
-    {
-    }
-
-    void program_prepare(WORD code_size) override
-    {
-    }
-
-    void program_format(peak::ProgramFormatType format) override
-    {
-    }
-
-    void program_next(BYTE number_of_elements, BYTE *data_buffer, BYTE data_length) override
-    {
-    }
-
-    void program_max(BYTE *element_buffer) override
-    {
-    }
-
-    void program_verify(BYTE mode, WORD type, DWORD value) override
-    {
-    }
-
-    void build_checksum(DWORD block_size) override
-    {
-    }
-
-    bool
-    cto_completion_handler(message_type message_type, XCPMessageInterface *cto_message) override
+    bool cto_completion_handler(XCPCTORequestInterface *cto_message)
     {
         return false;
     }
@@ -495,8 +252,41 @@ struct XCPClient : public rpc::client, public XCPInterface
 
 int main(int argc, char *argv[])
 {
+    /* create a new client instance. */
     auto client = XCPClient("192.168.1.121", 8080);
 
-    client.set_master_identifier(12);
-    return 0;
+    /* configure the communication */
+    client.set_master_identifier(0x100);
+    client.set_slave_identifier(0x200);
+    client.set_broadcast_identifier(0x300);
+    client.set_baud_rate(500000);
+    client.set_hardware_channel(1);
+    client.set_timing_parameter(timing_id_type::T1, 2000);
+    client.set_timing_parameter(timing_id_type::T2, 2000);
+    client.set_timing_parameter(timing_id_type::T3, 2000);
+    client.set_timing_parameter(timing_id_type::T4, 2000);
+    client.set_timing_parameter(timing_id_type::T5, 2000);
+    client.set_timing_parameter(timing_id_type::T6, 2000);
+    client.set_timing_parameter(timing_id_type::T7, 2000);
+
+    /* initialize interface. */
+    client.initialize_hardware();
+
+    /* start polling for 1000 data transfer objects. */
+    unsigned int idx = 0;
+
+    while (idx < 1000)
+    {
+        auto dto = client.dequeue_dto();
+
+        if (dto.valid)
+        {
+            std::string str(dto.buffer.begin(), dto.buffer.end());
+            std::cout << idx << ": " << str << std::endl;
+//            idx++;
+        }
+    }
+
+    /* de-initialize the interface. */
+    client.de_initialize_hardware(false);
 }

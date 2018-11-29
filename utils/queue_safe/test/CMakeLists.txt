@@ -1,7 +1,7 @@
 add_executable(queue_safe_test queue_safe_test.cpp)
 target_link_libraries(queue_safe_test
     PRIVATE gtest
-    PRIVATE queue)
+    PRIVATE queue_safe)
 
 gtest_discover_tests(queue_safe_test)
 add_test(NAME queue_safe_test

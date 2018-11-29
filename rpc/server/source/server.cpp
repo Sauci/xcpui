@@ -51,7 +51,7 @@ public:
     {
     }
 
-    virtual xcp_api_types::status_type operator()() = 0;
+    virtual xcp_interface_types::status_type operator()() = 0;
 
     virtual void update_parameters(msgpack::object &object) = 0;
 };
@@ -85,7 +85,7 @@ class Command : public CommandInterface
 
 protected:
 
-    typedef xcp_api_types::status_type (XCPInterface::*func_ptr)(parameters...);
+    typedef xcp_interface_types::status_type (XCPInterface::*func_ptr)(parameters...);
 
     func_ptr function;
 
@@ -119,7 +119,7 @@ public:
         object.convert(parameters_);
     }
 
-    xcp_api_types::status_type operator()() override
+    xcp_interface_types::status_type operator()() override
     {
         return 0;//std::apply(function, std::tuple_cat(std::make_tuple(this), parameters_));
     }
@@ -188,9 +188,11 @@ void event_callback(CommandInterface *command_interface)
 
 class XCPServer : public rpc::server
 {
+    XCPInterface &xcp_interface_;
 public:
 
-    explicit XCPServer(XCPInterface &xcp_interface, uint16_t port = 5000) : rpc::server(port)
+    explicit XCPServer(XCPInterface &xcp_interface, uint16_t port = 5000) :
+    rpc::server(port), xcp_interface_(xcp_interface)
     {
         /* InterfaceInterface methods. */
         this->bind(STR(GET_INTERFACE_TYPE), [&xcp_interface]() -> interface_types::interface_type
@@ -207,45 +209,50 @@ public:
 
         /* XCPInterface getter methods. */
         this->bind(STR(GET_MASTER_IDENTIFIER),
-                   [&xcp_interface]() -> xcp_api_types::identifier_type
+                   [&xcp_interface]() -> xcp_interface_types::identifier_type
                    { return xcp_interface.get_master_identifier(); });
         this->bind(STR(GET_SLAVE_IDENTIFIER),
-                   [&xcp_interface]() -> xcp_api_types::identifier_type
+                   [&xcp_interface]() -> xcp_interface_types::identifier_type
                    { return xcp_interface.get_slave_identifier(); });
         this->bind(STR(GET_BROADCAST_IDENTIFIER),
-                   [&xcp_interface]() -> xcp_api_types::identifier_type
+                   [&xcp_interface]() -> xcp_interface_types::identifier_type
                    { return xcp_interface.get_broadcast_identifier(); });
         this->bind(STR(GET_BAUD_RATE),
-                   [&xcp_interface]() -> xcp_interface_type::baud_rate_type
+                   [&xcp_interface]() -> xcp_interface_types::baud_rate_type
                    { return xcp_interface.get_baud_rate(); });
         this->bind(STR(GET_HARDWARE_CHANNEL),
-                   [&xcp_interface]() -> xcp_interface_type::hardware_channel_type
+                   [&xcp_interface]() -> xcp_interface_types::hardware_channel_type
                    { return xcp_interface.get_hardware_channel(); });
         this->bind(STR(GET_TIMING_PARAMETER),
-                   [&xcp_interface](xcp_interface_type::timing_parameter_id_type timing_parameter_id)
-                   -> xcp_interface_type::hardware_channel_type
+                   [&xcp_interface](xcp_interface_types::timing_id_type timing_parameter_id)
+                       -> xcp_interface_types::hardware_channel_type
                    { return xcp_interface.get_timing_parameter(timing_parameter_id); });
 
         /* XCPInterface setter methods. */
         this->bind(STR(SET_MASTER_IDENTIFIER),
-                   [&xcp_interface](xcp_api_types::identifier_type identifier)
+                   [&xcp_interface](xcp_interface_types::identifier_type identifier)
                    { xcp_interface.set_master_identifier(identifier); });
         this->bind(STR(SET_SLAVE_IDENTIFIER),
-                   [&xcp_interface](xcp_api_types::identifier_type identifier)
+                   [&xcp_interface](xcp_interface_types::identifier_type identifier)
                    { xcp_interface.set_slave_identifier(identifier); });
         this->bind(STR(SET_BROADCAST_IDENTIFIER),
-                   [&xcp_interface](xcp_api_types::identifier_type identifier)
+                   [&xcp_interface](xcp_interface_types::identifier_type identifier)
                    { xcp_interface.set_broadcast_identifier(identifier); });
         this->bind(STR(SET_BAUD_RATE),
-                   [&xcp_interface](xcp_api_types::baud_rate_type baud_rate)
+                   [&xcp_interface](xcp_interface_types::baud_rate_type baud_rate)
                    { xcp_interface.set_baud_rate(baud_rate); });
         this->bind(STR(SET_HARDWARE_CHANNEL),
                    [&xcp_interface](interface_types::hardware_channel_type hardware_channel)
                    { xcp_interface.set_hardware_channel(hardware_channel); });
         this->bind(STR(SET_TIMING_PARAMETER),
-                   [&xcp_interface](xcp_api_types::timing_parameter_id_type timing_parameter_id,
-                                    xcp_api_types::timing_parameter_type timing_parameter)
-                   { xcp_interface.set_timing_parameter(timing_parameter_id, timing_parameter); });
+                   [&xcp_interface](xcp_interface_types::timing_id_type timing_id,
+                                    xcp_interface_types::timing_type timing)
+                   { xcp_interface.set_timing_parameter(timing_id, timing); });
+
+        /* XCPInterface dequeue method. */
+        this->bind(STR(GET_CTO),
+            [this]() -> XCPDTOPacket
+            {return this->dequeue_cto();});
 
         /* XCPInterface standard methods. */
         this->bind(STR(INITIALIZE_HARDWARE),
@@ -255,125 +262,34 @@ public:
                    [&xcp_interface](bool wait_for_completion)
                    { xcp_interface.de_initialize_hardware(wait_for_completion); });
 
-        /* XCP protocol standard methods. */
-        this->bind(STR(CONNECT),
-                   [&xcp_interface](xcp_types::connect::MODE mode)
+        this->bind(STR(CONNECT_COMMAND_CODE),
+                   [&xcp_interface](XCP::CONNECT::MODE mode)
                    { xcp_interface.connect(mode); });
-        this->bind(STR(DISCONNECT),
-                   [&xcp_interface]()
-                   { xcp_interface.disconnect(); });
+        /* XCP protocol standard methods. */
+        //this->bind(STR(DISCONNECT),
+        //           [&xcp_interface](XCPCTODisconnectPack &cto)
+        //           { xcp_interface.disconnect(dynamic_cast<XCPCTODisconnectPack &>(cto)); });
     }
 
     ~XCPServer() = default;
-/*
-    const interface_types::interface_type get_interface_type() override
-    {
-        return XCPInterface::get_interface_type();
-    }
 
-    const interface_types::interface_name_type get_interface_name() override
+    XCPDTOPacket dequeue_cto()
     {
-        return XCPInterface::get_interface_name();
-    }
+        XCPDTOPacket packet;
+        auto dto = xcp_interface_.dequeue_dto();
+        if (dto)
+        {
+            packet.status = dto->get_status();
+            packet.buffer = dto->get_buffer();
+            packet.valid = true;
+        }
+        else
+        {
+            packet.valid = false;
+        }
 
-    const interface_types::hardware_channel_type get_hardware_channel_count() override
-    {
-        return XCPInterface::get_hardware_channel_count();
+        return packet;
     }
-
-    const bool is_plugged_in() override
-    {
-        return XCPInterface::is_plugged_in();
-    }
-
-    const xcp_interface_type::identifier_type get_master_identifier() override
-    {
-        return XCPInterface::get_master_identifier();
-    }
-
-    const xcp_interface_type::identifier_type get_slave_identifier() override
-    {
-        return XCPInterface::get_slave_identifier();
-    }
-
-    const xcp_interface_type::identifier_type get_broadcast_identifier() override
-    {
-        return XCPInterface::get_broadcast_identifier();
-    }
-
-    const xcp_interface_type::baud_rate_type get_baud_rate() override
-    {
-        return XCPInterface::get_baud_rate();
-    }
-
-    const xcp_interface_type::hardware_channel_type get_hardware_channel() override
-    {
-        return XCPInterface::get_hardware_channel();
-    }
-
-    const xcp_interface_type::timing_parameter_type
-    get_timing_parameter(xcp_interface_type::timing_parameter_id_type timing_parameter_id) override
-    {
-        return XCPInterface::get_timing_parameter(timing_parameter_id);
-    }
-
-    void set_master_identifier(xcp_api_types::identifier_type identifier) override
-    {
-        XCPInterface::set_master_identifier(identifier);
-    }
-
-    void set_slave_identifier(xcp_api_types::identifier_type identifier) override
-    {
-        XCPInterface::set_slave_identifier(identifier);
-    }
-
-    void set_broadcast_identifier(xcp_api_types::identifier_type identifier) override
-    {
-        XCPInterface::set_broadcast_identifier(identifier);
-    }
-
-    void set_baud_rate(xcp_api_types::baud_rate_type baud_rate) override
-    {
-        XCPInterface::set_baud_rate(baud_rate);
-    }
-
-    void set_hardware_channel(interface_types::hardware_channel_type hardware_channel) override
-    {
-        XCPInterface::set_hardware_channel(hardware_channel);
-    }
-
-    void set_timing_parameter(xcp_api_types::timing_parameter_id_type timing_parameter_id,
-                              xcp_api_types::timing_parameter_type timing_parameter) override
-    {
-        XCPInterface::set_timing_parameter(timing_parameter_id, timing_parameter);
-    }
-
-    void initialize_hardware(xcp_api_types::placeholder_type placeholder) override
-    {
-        XCPInterface::initialize_hardware(placeholder);
-    }
-
-    void de_initialize_hardware(bool wait_for_completion) override
-    {
-        XCPInterface::de_initialize_hardware(wait_for_completion);
-    };
-
-    void connect(xcp_protocol_types::connect::mode_type mode) override
-    {
-        XCPInterface::connect(mode);
-    }
-
-    void disconnect() override
-    {
-        XCPInterface::disconnect();
-    }
-
-    bool cto_completion_handler(message_type message_type,
-                                XCPCTOMessageInterface<XCPInterface> *cto_message) override
-    {
-        return false;
-    }
-    */
 };
 
 int main(int argc, char *argv[])
@@ -382,12 +298,7 @@ int main(int argc, char *argv[])
     auto interface = XCPPEAKInterface(api);
     auto server = XCPServer(interface, 8080);
 
-    server.async_run();
-
-    while (true)
-    {
-        std::cout << interface.get_master_identifier() << std::endl;
-    }
+    server.run();
 
     return 0;
 }
