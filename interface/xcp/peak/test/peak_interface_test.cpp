@@ -350,6 +350,9 @@ TEST_F(Runner, calling_de_initalize_hardware_with_valid_api_calls_does_not_throw
 
     EXPECT_CALL(*peak_if->api(), add_slave_on_can(_, _, _, _))
         .Times(AnyNumber()).WillRepeatedly(Return(peak::StatusType::DLL_XCP_ERR_OK));
+        
+EXPECT_CALL(*peak_if->api(), dequeue_packet(_, _, _, _))
+            .Times(AnyNumber()).WillRepeatedly(Return(peak::StatusType::DLL_XCP_ERR_OK));
 
     EXPECT_CALL(*peak_if->api(), reset_queue(_, _))
         .Times(AnyNumber()).WillRepeatedly(Return(peak::StatusType::DLL_XCP_ERR_OK));
