@@ -1,5 +1,6 @@
 add_executable(xcp_server source/server.cpp)
 target_link_libraries(xcp_server
+    PRIVATE can_interface_peak
     PRIVATE rpc
     PRIVATE rpc_shared
     PRIVATE xcp_peak_interface

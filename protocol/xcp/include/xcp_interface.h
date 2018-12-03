@@ -16,7 +16,6 @@
 #include <string>
 #include <vector>
 
-#include "interface_interface.h"
 #include "xcp_interface_types.h"
 #include "xcp_interface_exception.h"
 
@@ -32,28 +31,8 @@ using namespace xcp_interface_types;
  *   defined previously.
  * - use the XCP related methods such as connect as required by the application.
  */
-struct XCPInterface : public InterfaceInterface
+struct XCPInterface
 {
-    const interface_types::interface_type get_interface_type() override
-    {
-        return interface_types::interface_type::XCP;
-    }
-
-    const interface_types::interface_name_type get_interface_name() override
-    {
-        return interface_types::interface_name_type("TODO: get dynamic value from dll");
-    }
-
-    const interface_types::hardware_channel_type get_hardware_channel_count() override
-    {
-        return 2;
-    }
-
-    const bool is_plugged_in() override
-    {
-        return true; // TODO: get dynamic value from dll
-    }
-
     /**
      * @brief returns the master CAN identifier.
      * @returns master CAN identifier
@@ -71,18 +50,6 @@ struct XCPInterface : public InterfaceInterface
      * @returns broadcast CAN identifier
      */
     virtual const identifier_type get_broadcast_identifier() = 0;
-
-    /**
-     * @brief returns the baud rate value.
-     * @returns baud rate value [baud/s]
-     */
-    virtual const baud_rate_type get_baud_rate() = 0;
-
-    /**
-     * @brief returns the hardware channel value.
-     * @returns hardware channel value [-]
-     */
-    virtual const hardware_channel_type get_hardware_channel() = 0;
 
     /**
      * @brief returns the timing parameter value.
@@ -120,20 +87,6 @@ struct XCPInterface : public InterfaceInterface
      * @throw invalid_identifier_error if the requested CAN identifier is invalid
      */
     virtual void set_broadcast_identifier(identifier_type identifier) = 0;
-
-    /**
-     * @brief sets the communication baud rate.
-     * @param baud_rate baud rate [baud/s]
-     * @throw invalid_baud_rate_error if the requested baud rate is invalid
-     */
-    virtual void set_baud_rate(baud_rate_type baud_rate) = 0;
-
-    /**
-     * @brief sets the hardware channel.
-     * @param hardware_channel hardware channel (starting from 1)
-     * @throw invalid_hardware_channel_error if the requested hardware channel is invalid
-     */
-    virtual void set_hardware_channel(hardware_channel_type hardware_channel) = 0;
 
     /**
      * @brief sets the communication timeout parameter.

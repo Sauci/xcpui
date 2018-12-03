@@ -22,44 +22,6 @@
 #define SLAVE_ID 1
 #define BROADCAST_ID 2
 
-/*
-template<typename F, typename... ARGS>
-class PEAKCTOCallable : public XCPCTORequestInterface
-{
-    peak::StatusType status_;
-    F function_;
-    PEAKAPIInterface *api_;
-    std::tuple<ARGS...> parameters_;
-    std::vector<std::uint8_t> buffer_ = std::vector<std::uint8_t>(8);
-
-public:
-
-    explicit PEAKCTOCallable(PEAKAPIInterface *C, F f, ARGS... args) : XCPCTORequestInterface()
-    {
-        api_ = C;
-        function_ = f;
-        parameters_ = std::make_tuple(args...);
-    }
-
-    void operator()() override
-    {
-        // if (async)
-        //{
-        //    std::tuple_cat(std::make_tuple(api_, api_->get_handle()), parameters_,
-        //                   std::make_tuple((char *)nullptr, (BYTE)buffer_.size()));
-        //}
-        // else
-        //{
-        throw "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
-        auto p = std::tuple_cat(std::make_tuple(api_, api_->get_handle()), parameters_,
-                                std::make_tuple(buffer_.data(), (BYTE)buffer_.size()));
-
-        status_ = std::apply(function_, p);
-        //}
-    }
-};
-*/
-
 class XCPPEAKInterfaceTest;
 
 class XCPPEAKInterface : public XCPInterface
@@ -214,6 +176,7 @@ class XCPPEAKInterface : public XCPInterface
     }
 
 public:
+
     XCPPEAKInterface(PEAKAPIInterface &peak_api_interface) : api_(peak_api_interface)
     {
     }
@@ -236,84 +199,6 @@ public:
     const identifier_type get_broadcast_identifier() override
     {
         return identifier_[BROADCAST_ID];
-    };
-
-    const baud_rate_type get_baud_rate() override
-    {
-        switch (baud_rate_)
-        {
-            case peak::BaudRateType::BAUD_RATE_1000000:
-                return 1000000;
-            case peak::BaudRateType::BAUD_RATE_800000:
-                return 800000;
-            case peak::BaudRateType::BAUD_RATE_500000:
-                return 500000;
-            case peak::BaudRateType::BAUD_RATE_250000:
-                return 250000;
-            case peak::BaudRateType::BAUD_RATE_125000:
-                return 125000;
-            case peak::BaudRateType::BAUD_RATE_100000:
-                return 100000;
-            case peak::BaudRateType::BAUD_RATE_95000:
-                return 95000;
-            case peak::BaudRateType::BAUD_RATE_83000:
-                return 83000;
-            case peak::BaudRateType::BAUD_RATE_50000:
-                return 50000;
-            case peak::BaudRateType::BAUD_RATE_47000:
-                return 47000;
-            case peak::BaudRateType::BAUD_RATE_33000:
-                return 33000;
-            case peak::BaudRateType::BAUD_RATE_20000:
-                return 20000;
-            case peak::BaudRateType::BAUD_RATE_10000:
-                return 10000;
-            case peak::BaudRateType::BAUD_RATE_5000:
-                return 5000;
-            default:
-                throw invalid_baud_rate_error(baud_rate_);
-        }
-    };
-
-    const hardware_channel_type get_hardware_channel() override
-    {
-        switch (hardware_channel_)
-        {
-            case peak::ChannelType::CHANNEL_BUS_USB_1:
-                return 1;
-            case peak::ChannelType::CHANNEL_BUS_USB_2:
-                return 2;
-            case peak::ChannelType::CHANNEL_BUS_USB_3:
-                return 3;
-            case peak::ChannelType::CHANNEL_BUS_USB_4:
-                return 4;
-            case peak::ChannelType::CHANNEL_BUS_USB_5:
-                return 5;
-            case peak::ChannelType::CHANNEL_BUS_USB_6:
-                return 6;
-            case peak::ChannelType::CHANNEL_BUS_USB_7:
-                return 7;
-            case peak::ChannelType::CHANNEL_BUS_USB_8:
-                return 8;
-            case peak::ChannelType::CHANNEL_BUS_USB_9:
-                return 9;
-            case peak::ChannelType::CHANNEL_BUS_USB_10:
-                return 10;
-            case peak::ChannelType::CHANNEL_BUS_USB_11:
-                return 11;
-            case peak::ChannelType::CHANNEL_BUS_USB_12:
-                return 12;
-            case peak::ChannelType::CHANNEL_BUS_USB_13:
-                return 13;
-            case peak::ChannelType::CHANNEL_BUS_USB_14:
-                return 14;
-            case peak::ChannelType::CHANNEL_BUS_USB_15:
-                return 15;
-            case peak::ChannelType::CHANNEL_BUS_USB_16:
-                return 16;
-            default:
-                throw invalid_hardware_channel_error(hardware_channel_);
-        }
     };
 
     XCPDTOInterface *dequeue_dto() override
@@ -388,114 +273,6 @@ public:
         else
         {
             throw invalid_identifier_error(identifier);
-        }
-    }
-
-    void set_baud_rate(baud_rate_type baud_rate) override
-    {
-        switch (baud_rate)
-        {
-            case 1000000:
-                baud_rate_ = peak::BaudRateType::BAUD_RATE_1000000;
-                break;
-            case 800000:
-                baud_rate_ = peak::BaudRateType::BAUD_RATE_800000;
-                break;
-            case 500000:
-                baud_rate_ = peak::BaudRateType::BAUD_RATE_500000;
-                break;
-            case 250000:
-                baud_rate_ = peak::BaudRateType::BAUD_RATE_250000;
-                break;
-            case 125000:
-                baud_rate_ = peak::BaudRateType::BAUD_RATE_125000;
-                break;
-            case 100000:
-                baud_rate_ = peak::BaudRateType::BAUD_RATE_100000;
-                break;
-            case 95000:
-                baud_rate_ = peak::BaudRateType::BAUD_RATE_95000;
-                break;
-            case 83000:
-                baud_rate_ = peak::BaudRateType::BAUD_RATE_83000;
-                break;
-            case 50000:
-                baud_rate_ = peak::BaudRateType::BAUD_RATE_50000;
-                break;
-            case 47000:
-                baud_rate_ = peak::BaudRateType::BAUD_RATE_47000;
-                break;
-            case 33000:
-                baud_rate_ = peak::BaudRateType::BAUD_RATE_33000;
-                break;
-            case 20000:
-                baud_rate_ = peak::BaudRateType::BAUD_RATE_20000;
-                break;
-            case 10000:
-                baud_rate_ = peak::BaudRateType::BAUD_RATE_10000;
-                break;
-            case 5000:
-                baud_rate_ = peak::BaudRateType::BAUD_RATE_5000;
-                break;
-            default:
-                throw invalid_baud_rate_error(baud_rate);
-        }
-    }
-
-    void set_hardware_channel(interface_types::hardware_channel_type hardware_channel) override
-    {
-        switch (hardware_channel)
-        {
-            case 1:
-                hardware_channel_ = peak::ChannelType::CHANNEL_BUS_USB_1;
-                break;
-            case 2:
-                hardware_channel_ = peak::ChannelType::CHANNEL_BUS_USB_2;
-                break;
-            case 3:
-                hardware_channel_ = peak::ChannelType::CHANNEL_BUS_USB_3;
-                break;
-            case 4:
-                hardware_channel_ = peak::ChannelType::CHANNEL_BUS_USB_4;
-                break;
-            case 5:
-                hardware_channel_ = peak::ChannelType::CHANNEL_BUS_USB_5;
-                break;
-            case 6:
-                hardware_channel_ = peak::ChannelType::CHANNEL_BUS_USB_6;
-                break;
-            case 7:
-                hardware_channel_ = peak::ChannelType::CHANNEL_BUS_USB_7;
-                break;
-            case 8:
-                hardware_channel_ = peak::ChannelType::CHANNEL_BUS_USB_8;
-                break;
-            case 9:
-                hardware_channel_ = peak::ChannelType::CHANNEL_BUS_USB_9;
-                break;
-            case 10:
-                hardware_channel_ = peak::ChannelType::CHANNEL_BUS_USB_10;
-                break;
-            case 11:
-                hardware_channel_ = peak::ChannelType::CHANNEL_BUS_USB_11;
-                break;
-            case 12:
-                hardware_channel_ = peak::ChannelType::CHANNEL_BUS_USB_12;
-                break;
-            case 13:
-                hardware_channel_ = peak::ChannelType::CHANNEL_BUS_USB_13;
-                break;
-            case 14:
-                hardware_channel_ = peak::ChannelType::CHANNEL_BUS_USB_14;
-                break;
-            case 15:
-                hardware_channel_ = peak::ChannelType::CHANNEL_BUS_USB_15;
-                break;
-            case 16:
-                hardware_channel_ = peak::ChannelType::CHANNEL_BUS_USB_16;
-                break;
-            default:
-                throw invalid_hardware_channel_error(hardware_channel);
         }
     }
 

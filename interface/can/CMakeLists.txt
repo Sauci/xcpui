@@ -1,0 +1,7 @@
+add_library(can_interface INTERFACE)
+target_include_directories(can_interface INTERFACE include)
+
+add_library(can_interface_mock INTERFACE)
+target_include_directories(can_interface_mock INTERFACE include)
+
+add_subdirectory(peak)

@@ -26,7 +26,7 @@ PEAKAPI::PEAKAPI()
 #endif
 
     std::string file_path = __FILE__;
-    std::string cd = file_path.substr(0, file_path.rfind("\\")) + std::string("\\..\\lib\\");
+    std::string cd = file_path.substr(0, file_path.rfind("\\")) + std::string(R"(\..\lib\)");
     auto basic_path = cd + std::string("peak_basic\\") + dir + std::string("\\PCANBasic.dll");
     auto isotp_path = cd + std::string("peak_isotp\\") + dir + std::string("\\PCAN-ISO-TP.dll");
     auto xcp_path = cd + std::string("peak_xcp\\") + dir + std::string("\\PXCP.dll");

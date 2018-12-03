@@ -118,8 +118,9 @@ endif ()
 
 add_subdirectory(api)
 add_subdirectory(dependencies)
-#add_subdirectory(gateway)
 add_subdirectory(interface)
+add_subdirectory(protocol)
+add_subdirectory(transport)
 add_subdirectory(rpc)
 add_subdirectory(utils)
 

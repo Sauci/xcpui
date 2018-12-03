@@ -4,5 +4,6 @@
 .vs
 build
 cmake-build-*
-test
+test/*.xml
 api/peak/lib
+interface/usb/peak/lib

@@ -68,7 +68,6 @@ namespace xcp_interface_types
 {
     typedef std::uint32_t baud_rate_type;
     typedef std::vector<std::uint8_t> buffer_type;
-    typedef std::uint32_t hardware_channel_type;
     typedef std::uint32_t identifier_type;
     typedef std::uint32_t status_type;
     typedef enum : std::uint16_t

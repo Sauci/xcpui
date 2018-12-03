@@ -184,29 +184,37 @@ void event_callback(CommandInterface *command_interface)
 
 #include "rpc/server.h"
 #include "shared.h"
+#include "can_interface_peak.h"
 #include "xcp_peak_interface.h"
 
-class XCPServer : public rpc::server
+class CANServer : public rpc::server
+{
+    CANInterface &can_interface_;
+
+public:
+
+    CANServer(CANInterface &can_interface, uint16_t port) :
+        rpc::server(port), can_interface_(can_interface)
+    {
+        this->bind(STR(GET_CHANNEL), [&can_interface]() -> can_types::channel_type
+        { return can_interface.get_channel();});
+
+        this->bind(STR(GET_BAUD_RATE), [&can_interface]() -> can_types::baud_rate_type
+        { return can_interface.get_baud_rate();});
+
+        this->bind(STR(GET_CHANNEL_COUNT), [&can_interface]() -> can_types::channel_type
+        { return can_interface.get_channel_count();});
+    }
+};
+
+class XCPServer : public CANServer
 {
     XCPInterface &xcp_interface_;
 public:
 
-    explicit XCPServer(XCPInterface &xcp_interface, uint16_t port = 5000) :
-    rpc::server(port), xcp_interface_(xcp_interface)
+    explicit XCPServer(CANInterface &can_interface, XCPInterface &xcp_interface, uint16_t port) :
+        CANServer(can_interface, port), xcp_interface_(xcp_interface)
     {
-        /* InterfaceInterface methods. */
-        this->bind(STR(GET_INTERFACE_TYPE), [&xcp_interface]() -> interface_types::interface_type
-        { return xcp_interface.get_interface_type(); });
-        this->bind(STR(GET_INTERFACE_NAME),
-                   [&xcp_interface]() -> interface_types::interface_name_type
-                   { return xcp_interface.get_interface_name(); });
-        this->bind(STR(GET_HARDWARE_CHANNEL_COUNT),
-                   [&xcp_interface]() -> interface_types::hardware_channel_type
-                   { return xcp_interface.get_hardware_channel_count(); });
-        this->bind(STR(IS_PLUGGED_IN),
-                   [&xcp_interface]() -> bool
-                   { return xcp_interface.is_plugged_in(); });
-
         /* XCPInterface getter methods. */
         this->bind(STR(GET_MASTER_IDENTIFIER),
                    [&xcp_interface]() -> xcp_interface_types::identifier_type
@@ -217,15 +225,9 @@ public:
         this->bind(STR(GET_BROADCAST_IDENTIFIER),
                    [&xcp_interface]() -> xcp_interface_types::identifier_type
                    { return xcp_interface.get_broadcast_identifier(); });
-        this->bind(STR(GET_BAUD_RATE),
-                   [&xcp_interface]() -> xcp_interface_types::baud_rate_type
-                   { return xcp_interface.get_baud_rate(); });
-        this->bind(STR(GET_HARDWARE_CHANNEL),
-                   [&xcp_interface]() -> xcp_interface_types::hardware_channel_type
-                   { return xcp_interface.get_hardware_channel(); });
         this->bind(STR(GET_TIMING_PARAMETER),
                    [&xcp_interface](xcp_interface_types::timing_id_type timing_parameter_id)
-                       -> xcp_interface_types::hardware_channel_type
+                       -> xcp_interface_types::timing_type
                    { return xcp_interface.get_timing_parameter(timing_parameter_id); });
 
         /* XCPInterface setter methods. */
@@ -238,12 +240,6 @@ public:
         this->bind(STR(SET_BROADCAST_IDENTIFIER),
                    [&xcp_interface](xcp_interface_types::identifier_type identifier)
                    { xcp_interface.set_broadcast_identifier(identifier); });
-        this->bind(STR(SET_BAUD_RATE),
-                   [&xcp_interface](xcp_interface_types::baud_rate_type baud_rate)
-                   { xcp_interface.set_baud_rate(baud_rate); });
-        this->bind(STR(SET_HARDWARE_CHANNEL),
-                   [&xcp_interface](interface_types::hardware_channel_type hardware_channel)
-                   { xcp_interface.set_hardware_channel(hardware_channel); });
         this->bind(STR(SET_TIMING_PARAMETER),
                    [&xcp_interface](xcp_interface_types::timing_id_type timing_id,
                                     xcp_interface_types::timing_type timing)
@@ -251,8 +247,8 @@ public:
 
         /* XCPInterface dequeue method. */
         this->bind(STR(GET_CTO),
-            [this]() -> XCPDTOPacket
-            {return this->dequeue_cto();});
+                   [this]() -> XCPDTOPacket
+                   { return this->dequeue_cto(); });
 
         /* XCPInterface standard methods. */
         this->bind(STR(INITIALIZE_HARDWARE),
@@ -295,8 +291,9 @@ public:
 int main(int argc, char *argv[])
 {
     auto api = PEAKAPI();
-    auto interface = XCPPEAKInterface(api);
-    auto server = XCPServer(interface, 8080);
+    auto can_interface = CANInterfacePEAK(1, 500000);
+    auto xcp_interface = XCPPEAKInterface(api);
+    auto server = XCPServer(can_interface, xcp_interface, 8080);
 
     server.run();
 

@@ -131,24 +131,6 @@ struct XCPClient : public rpc::client
 
     ~XCPClient() = default;
 
-    const interface_types::interface_type get_interface_type()
-    {
-        auto tmp_return = rpc::client::call(STR(GET_INTERFACE_TYPE));
-        return tmp_return.as<interface_types::interface_type>();
-    }
-
-    const interface_types::interface_name_type get_interface_name()
-    {
-        auto tmp_return = rpc::client::call(STR(GET_INTERFACE_NAME));
-        return tmp_return.as<interface_types::interface_name_type>();
-    }
-
-    const interface_types::hardware_channel_type get_hardware_channel_count()
-    {
-        auto tmp_return = rpc::client::call(STR(GET_HARDWARE_CHANNEL_COUNT));
-        return tmp_return.as<interface_types::hardware_channel_type>();
-    }
-
     const bool is_plugged_in()
     {
         auto tmp_return = rpc::client::call(STR(IS_PLUGGED_IN));
@@ -179,12 +161,6 @@ struct XCPClient : public rpc::client
         return tmp_return.as<xcp_interface_types::baud_rate_type>();
     }
 
-    const xcp_interface_types::hardware_channel_type get_hardware_channel()
-    {
-        auto tmp_return = rpc::client::call(STR(GET_HARDWARE_CHANNEL));
-        return tmp_return.as<xcp_interface_types::hardware_channel_type>();
-    }
-
     const xcp_interface_types::timing_type
     get_timing_parameter(xcp_interface_types::timing_id_type timing_parameter_id)
     {
@@ -211,16 +187,6 @@ struct XCPClient : public rpc::client
     void set_broadcast_identifier(xcp_interface_types::identifier_type identifier)
     {
         rpc::client::async_call(STR(SET_BROADCAST_IDENTIFIER), identifier);
-    }
-
-    void set_baud_rate(xcp_interface_types::baud_rate_type baud_rate)
-    {
-        rpc::client::async_call(STR(SET_BAUD_RATE), baud_rate);
-    }
-
-    void set_hardware_channel(interface_types::hardware_channel_type hardware_channel)
-    {
-        rpc::client::async_call(STR(SET_HARDWARE_CHANNEL), hardware_channel);
     }
 
     void set_timing_parameter(xcp_interface_types::timing_id_type timing_id,
@@ -259,8 +225,6 @@ int main(int argc, char *argv[])
     client.set_master_identifier(0x100);
     client.set_slave_identifier(0x200);
     client.set_broadcast_identifier(0x300);
-    client.set_baud_rate(500000);
-    client.set_hardware_channel(1);
     client.set_timing_parameter(timing_id_type::T1, 2000);
     client.set_timing_parameter(timing_id_type::T2, 2000);
     client.set_timing_parameter(timing_id_type::T3, 2000);

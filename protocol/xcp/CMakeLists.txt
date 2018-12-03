@@ -1,7 +1,8 @@
 add_library(xcp_interface INTERFACE)
 target_include_directories(xcp_interface INTERFACE include)
 target_link_libraries(xcp_interface
-    INTERFACE interface_interface)
+    INTERFACE can_interface
+    INTERFACE isotp)
 
 if (${enable_test})
     add_library(xcp_interface_mock INTERFACE)

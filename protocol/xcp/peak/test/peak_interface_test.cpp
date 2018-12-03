@@ -91,27 +91,9 @@ protected:
     }
 };
 
-TEST_F(Runner, calling_get_interface_type_on_pcan_usb_pro_interface_returns_xcp)
-{
-    EXPECT_EQ(peak_if->get_interface_type(), interface_types::interface_type::XCP);
-}
-
 TEST_F(Runner, calling_get_interface_on_pcan_usb_pro_interface_returns_correct_string)
 {
     //EXPECT_EQ(peak_if->get_interface_name(), std::string("PCAN-USB Pro FD"));
-}
-
-TEST_F(Runner, calling_get_hardware_channel_count_on_pcan_usb_pro_interface_returns_2)
-{
-    EXPECT_EQ(peak_if->get_hardware_channel_count(), 2);
-}
-
-TEST_F(Runner, calling_what_on_invalid_baud_rate_error_returns_correct_string)
-{
-    auto error = invalid_baud_rate_error(0);
-    EXPECT_EQ(std::string(error.what()),
-              std::string(
-                  "invalid baud rate [0]. allowed range: 5000 [baud/s] .. 1000000[baud/s]"));
 }
 
 TEST_F(Runner, calling_what_on_invalid_identifier_error_returns_correct_string)
@@ -119,13 +101,6 @@ TEST_F(Runner, calling_what_on_invalid_identifier_error_returns_correct_string)
     auto error = invalid_identifier_error(0);
     EXPECT_EQ(std::string(error.what()),
               std::string("invalid CAN identifier [0]. allowed range: 0x00 [-] .. 0x1FFFFFFF [-]"));
-}
-
-TEST_F(Runner, calling_what_on_invalid_hardware_channel_error_returns_correct_string)
-{
-    auto error = invalid_hardware_channel_error(0);
-    EXPECT_EQ(std::string(error.what()),
-              std::string("invalid hardware channel [0]. allowed range: 1 [-] .. 2 [-]"));
 }
 
 TEST_F(Runner, calling_what_on_invalid_command_error_returns_correct_string)
@@ -175,114 +150,6 @@ TEST_F(Runner, calling_set_broadcast_identifier_with_invalid_29_bit_identifier_t
 {
     EXPECT_THROW(peak_if->set_broadcast_identifier(maximum_29_bit_id + 1),
                  invalid_identifier_error);
-}
-
-TEST_F(Runner, calling_set_baud_rate_and_get_baud_rate_set_and_get_value_correctly)
-{
-    EXPECT_NO_THROW(peak_if->set_baud_rate(5000));
-    EXPECT_EQ(peak_if->get_baud_rate(), 5000);
-    EXPECT_EQ(peak_if->get_baud_rate_internal(), peak::BaudRateType::BAUD_RATE_5000);
-    EXPECT_NO_THROW(peak_if->set_baud_rate(10000));
-    EXPECT_EQ(peak_if->get_baud_rate(), 10000);
-    EXPECT_EQ(peak_if->get_baud_rate_internal(), peak::BaudRateType::BAUD_RATE_10000);
-    EXPECT_NO_THROW(peak_if->set_baud_rate(20000));
-    EXPECT_EQ(peak_if->get_baud_rate(), 20000);
-    EXPECT_EQ(peak_if->get_baud_rate_internal(), peak::BaudRateType::BAUD_RATE_20000);
-    EXPECT_NO_THROW(peak_if->set_baud_rate(33000));
-    EXPECT_EQ(peak_if->get_baud_rate(), 33000);
-    EXPECT_EQ(peak_if->get_baud_rate_internal(), peak::BaudRateType::BAUD_RATE_33000);
-    EXPECT_NO_THROW(peak_if->set_baud_rate(47000));
-    EXPECT_EQ(peak_if->get_baud_rate(), 47000);
-    EXPECT_EQ(peak_if->get_baud_rate_internal(), peak::BaudRateType::BAUD_RATE_47000);
-    EXPECT_NO_THROW(peak_if->set_baud_rate(50000));
-    EXPECT_EQ(peak_if->get_baud_rate(), 50000);
-    EXPECT_EQ(peak_if->get_baud_rate_internal(), peak::BaudRateType::BAUD_RATE_50000);
-    EXPECT_NO_THROW(peak_if->set_baud_rate(83000));
-    EXPECT_EQ(peak_if->get_baud_rate(), 83000);
-    EXPECT_EQ(peak_if->get_baud_rate_internal(), peak::BaudRateType::BAUD_RATE_83000);
-    EXPECT_NO_THROW(peak_if->set_baud_rate(95000));
-    EXPECT_EQ(peak_if->get_baud_rate(), 95000);
-    EXPECT_EQ(peak_if->get_baud_rate_internal(), peak::BaudRateType::BAUD_RATE_95000);
-    EXPECT_NO_THROW(peak_if->set_baud_rate(100000));
-    EXPECT_EQ(peak_if->get_baud_rate(), 100000);
-    EXPECT_EQ(peak_if->get_baud_rate_internal(), peak::BaudRateType::BAUD_RATE_100000);
-    EXPECT_NO_THROW(peak_if->set_baud_rate(125000));
-    EXPECT_EQ(peak_if->get_baud_rate(), 125000);
-    EXPECT_EQ(peak_if->get_baud_rate_internal(), peak::BaudRateType::BAUD_RATE_125000);
-    EXPECT_NO_THROW(peak_if->set_baud_rate(250000));
-    EXPECT_EQ(peak_if->get_baud_rate(), 250000);
-    EXPECT_EQ(peak_if->get_baud_rate_internal(), peak::BaudRateType::BAUD_RATE_250000);
-    EXPECT_NO_THROW(peak_if->set_baud_rate(500000));
-    EXPECT_EQ(peak_if->get_baud_rate(), 500000);
-    EXPECT_EQ(peak_if->get_baud_rate_internal(), peak::BaudRateType::BAUD_RATE_500000);
-    EXPECT_NO_THROW(peak_if->set_baud_rate(800000));
-    EXPECT_EQ(peak_if->get_baud_rate(), 800000);
-    EXPECT_EQ(peak_if->get_baud_rate_internal(), peak::BaudRateType::BAUD_RATE_800000);
-    EXPECT_NO_THROW(peak_if->set_baud_rate(1000000));
-    EXPECT_EQ(peak_if->get_baud_rate(), 1000000);
-    EXPECT_EQ(peak_if->get_baud_rate_internal(), peak::BaudRateType::BAUD_RATE_1000000);
-}
-
-TEST_F(Runner, calling_set_baud_tate_with_invalid_baud_rate_throws_an_exception)
-{
-    EXPECT_THROW(peak_if->set_baud_rate(0), invalid_baud_rate_error);
-}
-
-TEST_F(Runner, calling_set_hardware_channel_and_get_hardware_channel_set_and_get_value_correctly)
-{
-    EXPECT_NO_THROW(peak_if->set_hardware_channel(1));
-    EXPECT_EQ(peak_if->get_hardware_channel(), 1);
-    EXPECT_EQ(peak_if->get_hardware_channel_internal(), peak::ChannelType::CHANNEL_BUS_USB_1);
-    EXPECT_NO_THROW(peak_if->set_hardware_channel(2));
-    EXPECT_EQ(peak_if->get_hardware_channel(), 2);
-    EXPECT_EQ(peak_if->get_hardware_channel_internal(), peak::ChannelType::CHANNEL_BUS_USB_2);
-    EXPECT_NO_THROW(peak_if->set_hardware_channel(3));
-    EXPECT_EQ(peak_if->get_hardware_channel(), 3);
-    EXPECT_EQ(peak_if->get_hardware_channel_internal(), peak::ChannelType::CHANNEL_BUS_USB_3);
-    EXPECT_NO_THROW(peak_if->set_hardware_channel(4));
-    EXPECT_EQ(peak_if->get_hardware_channel(), 4);
-    EXPECT_EQ(peak_if->get_hardware_channel_internal(), peak::ChannelType::CHANNEL_BUS_USB_4);
-    EXPECT_NO_THROW(peak_if->set_hardware_channel(5));
-    EXPECT_EQ(peak_if->get_hardware_channel(), 5);
-    EXPECT_EQ(peak_if->get_hardware_channel_internal(), peak::ChannelType::CHANNEL_BUS_USB_5);
-    EXPECT_NO_THROW(peak_if->set_hardware_channel(6));
-    EXPECT_EQ(peak_if->get_hardware_channel(), 6);
-    EXPECT_EQ(peak_if->get_hardware_channel_internal(), peak::ChannelType::CHANNEL_BUS_USB_6);
-    EXPECT_NO_THROW(peak_if->set_hardware_channel(7));
-    EXPECT_EQ(peak_if->get_hardware_channel(), 7);
-    EXPECT_EQ(peak_if->get_hardware_channel_internal(), peak::ChannelType::CHANNEL_BUS_USB_7);
-    EXPECT_NO_THROW(peak_if->set_hardware_channel(8));
-    EXPECT_EQ(peak_if->get_hardware_channel(), 8);
-    EXPECT_EQ(peak_if->get_hardware_channel_internal(), peak::ChannelType::CHANNEL_BUS_USB_8);
-    EXPECT_NO_THROW(peak_if->set_hardware_channel(9));
-    EXPECT_EQ(peak_if->get_hardware_channel(), 9);
-    EXPECT_EQ(peak_if->get_hardware_channel_internal(), peak::ChannelType::CHANNEL_BUS_USB_9);
-    EXPECT_NO_THROW(peak_if->set_hardware_channel(10));
-    EXPECT_EQ(peak_if->get_hardware_channel(), 10);
-    EXPECT_EQ(peak_if->get_hardware_channel_internal(), peak::ChannelType::CHANNEL_BUS_USB_10);
-    EXPECT_NO_THROW(peak_if->set_hardware_channel(11));
-    EXPECT_EQ(peak_if->get_hardware_channel(), 11);
-    EXPECT_EQ(peak_if->get_hardware_channel_internal(), peak::ChannelType::CHANNEL_BUS_USB_11);
-    EXPECT_NO_THROW(peak_if->set_hardware_channel(12));
-    EXPECT_EQ(peak_if->get_hardware_channel(), 12);
-    EXPECT_EQ(peak_if->get_hardware_channel_internal(), peak::ChannelType::CHANNEL_BUS_USB_12);
-    EXPECT_NO_THROW(peak_if->set_hardware_channel(13));
-    EXPECT_EQ(peak_if->get_hardware_channel(), 13);
-    EXPECT_EQ(peak_if->get_hardware_channel_internal(), peak::ChannelType::CHANNEL_BUS_USB_13);
-    EXPECT_NO_THROW(peak_if->set_hardware_channel(14));
-    EXPECT_EQ(peak_if->get_hardware_channel(), 14);
-    EXPECT_EQ(peak_if->get_hardware_channel_internal(), peak::ChannelType::CHANNEL_BUS_USB_14);
-    EXPECT_NO_THROW(peak_if->set_hardware_channel(15));
-    EXPECT_EQ(peak_if->get_hardware_channel(), 15);
-    EXPECT_EQ(peak_if->get_hardware_channel_internal(), peak::ChannelType::CHANNEL_BUS_USB_15);
-    EXPECT_NO_THROW(peak_if->set_hardware_channel(16));
-    EXPECT_EQ(peak_if->get_hardware_channel(), 16);
-    EXPECT_EQ(peak_if->get_hardware_channel_internal(), peak::ChannelType::CHANNEL_BUS_USB_16);
-}
-
-TEST_F(Runner, calling_set_hardware_channel_with_invalid_hardware_channel_throws_an_exception)
-{
-    EXPECT_THROW(peak_if->set_hardware_channel(0), invalid_hardware_channel_error);
 }
 
 TEST_F(Runner, calling_set_timing_parameter_and_get_timing_parameter_set_and_get_value_correctly)
@@ -347,6 +214,9 @@ TEST_F(Runner, calling_de_initalize_hardware_with_valid_api_calls_does_not_throw
         .Times(AnyNumber()).WillRepeatedly(Return(peak::StatusType::DLL_XCP_ERR_OK));
 
     EXPECT_CALL(mock, reset_queue(_, _))
+        .Times(AnyNumber()).WillRepeatedly(Return(peak::StatusType::DLL_XCP_ERR_OK));
+
+    EXPECT_CALL(mock, dequeue_packet(_, _, _, _))
         .Times(AnyNumber()).WillRepeatedly(Return(peak::StatusType::DLL_XCP_ERR_OK));
 
     EXPECT_CALL(mock, remove_slave(_))

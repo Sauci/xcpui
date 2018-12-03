@@ -42,57 +42,11 @@ public:
     }
 };
 
-class invalid_baud_rate_error :
-    public xcp_interface_exception<baud_rate_type>
-{
-    std::string prefix_ = std::string("invalid baud rate");
-    std::string allowed_range_ = std::string("5000 [baud/s] .. 1000000[baud/s]");
-
-protected:
-
-    const std::string &get_prefix() const override
-    {
-        return prefix_;
-    }
-
-    const std::string &get_allowed_range() const override
-    {
-        return allowed_range_;
-    }
-
-public:
-
-    using xcp_interface_exception::xcp_interface_exception;
-};
-
 class invalid_identifier_error :
     public xcp_interface_exception<identifier_type>
 {
     std::string prefix_ = std::string("invalid CAN identifier");
     std::string allowed_range_ = std::string("0x00 [-] .. 0x1FFFFFFF [-]");
-
-protected:
-
-    const std::string &get_prefix() const override
-    {
-        return prefix_;
-    }
-
-    const std::string &get_allowed_range() const override
-    {
-        return allowed_range_;
-    }
-
-public:
-
-    using xcp_interface_exception::xcp_interface_exception;
-};
-
-class invalid_hardware_channel_error
-    : public xcp_interface_exception<interface_types::hardware_channel_type>
-{
-    std::string prefix_ = std::string("invalid hardware channel");
-    std::string allowed_range_ = std::string("1 [-] .. 2 [-]");
 
 protected:
 
